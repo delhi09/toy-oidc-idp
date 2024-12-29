@@ -10,4 +10,9 @@ urlpatterns = [
         name="discovery",
     ),
     path("authorize/", views.AuthorizeView.as_view(), name="authorize"),
+    path(
+        "consent/<str:consent_access_token>/",
+        views.ConsentView.as_view(),
+        name="consent",
+    ),
 ]

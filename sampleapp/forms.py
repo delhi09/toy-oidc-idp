@@ -25,3 +25,10 @@ class AuthorizeForm(forms.Form):
 class LoginForm(forms.Form):
     username = forms.CharField(max_length=32)
     password = forms.CharField(widget=forms.PasswordInput)
+    scope = forms.CharField(widget=forms.HiddenInput)
+
+    def clean_scope(self):
+        scope = self.cleaned_data["scope"].split()
+        if "openid" not in scope:
+            raise forms.ValidationError("Invalid scope")
+        return scope

@@ -1,10 +1,13 @@
-from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
-from django.shortcuts import render
+from datetime import datetime, timedelta
+from django.http import HttpResponseBadRequest, JsonResponse
+from django.shortcuts import redirect, render
 from django.views import View
 
 from sampleapp.forms import AuthorizeForm, LoginForm
-from sampleapp.models import RelyingParty
+from sampleapp.models import ConsentAccessToken, ConsentAccessTokenScope, RelyingParty
 from django.contrib.auth import authenticate, login
+from django.utils import crypto
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 
 class DiscoveryView(View):
@@ -25,7 +28,15 @@ class AuthorizeView(View):
         if not RelyingParty.objects.filter(client_id=client_id).exists():
             return HttpResponseBadRequest()
 
-        return render(request, "login.html", {"form": LoginForm()})
+        return render(
+            request,
+            "login.html",
+            {
+                "form": LoginForm(
+                    initial={"scope": " ".join(form.cleaned_data["scope"])}
+                )
+            },
+        )
 
     def post(self, request):
         form = LoginForm(request.POST)
@@ -40,4 +51,21 @@ class AuthorizeView(View):
             form.add_error(None, "IDかパスワードが間違っています")
             return render(request, "login.html", {"form": form})
         login(request, user)
-        return HttpResponse("Logged in")
+        token = ConsentAccessToken.objects.create(
+            token=crypto.get_random_string(8),
+            user=user,
+            expired_at=datetime.now() + timedelta(minutes=10),
+        )
+        for scope in form.cleaned_data["scope"]:
+            ConsentAccessTokenScope.objects.create(token=token, scope=scope)
+        return redirect("sampleapp:consent", consent_access_token=token.token)
+
+
+class ConsentView(LoginRequiredMixin, View):
+    def get(self, request, consent_access_token):
+        token = ConsentAccessToken.objects.filter(
+            token=consent_access_token,
+            user=request.user,
+            expired_at__gte=datetime.now(),
+        ).get()
+        return render(request, "consent.html", {"consent_access_token": token})
