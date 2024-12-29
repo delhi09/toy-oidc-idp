@@ -1,0 +1,13 @@
+<html>
+  <head>
+    <title>Company Registration</title>
+  </head>
+  <body>
+    <form action="{% url 'sampleapp:authorize' %}" method="post">
+      {% csrf_token %}
+      <h1>ログイン</h1>
+      {{ form.as_p }}
+      <input type="submit" value="登録">
+    </form>
+  </body>
+</html>
