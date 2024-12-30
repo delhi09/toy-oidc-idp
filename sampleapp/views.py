@@ -4,7 +4,12 @@ from django.shortcuts import redirect, render
 from django.views import View
 
 from sampleapp.forms import AuthorizeForm, LoginForm
-from sampleapp.models import ConsentAccessToken, ConsentAccessTokenScope, RelyingParty
+from sampleapp.models import (
+    AuthorizationCode,
+    ConsentAccessToken,
+    ConsentAccessTokenScope,
+    RelyingParty,
+)
 from django.contrib.auth import authenticate, login
 from django.utils import crypto
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -15,6 +20,7 @@ class DiscoveryView(View):
         return JsonResponse(
             {
                 "authorization_endpoint": "http://localhost:8000/sample/authorize/",
+                "token_endpoint": "http://localhost:8000/sample/token/",
             }
         )
 
@@ -37,6 +43,7 @@ class AuthorizeView(View):
                         "scope": " ".join(form.cleaned_data["scope"]),
                         "redirect_uri": form.cleaned_data["redirect_uri"],
                         "state": form.cleaned_data["state"],
+                        "client_id": form.cleaned_data["client_id"],
                     }
                 )
             },
@@ -61,6 +68,7 @@ class AuthorizeView(View):
             expired_at=datetime.now() + timedelta(minutes=10),
             redirect_uri=form.cleaned_data["redirect_uri"],
             state=form.cleaned_data["state"],
+            client=RelyingParty.objects.get(client_id=form.cleaned_data["client_id"]),
         )
         for scope in form.cleaned_data["scope"]:
             ConsentAccessTokenScope.objects.create(token=token, scope=scope)
@@ -82,7 +90,18 @@ class ConsentView(LoginRequiredMixin, View):
             user=request.user,
             expired_at__gte=datetime.now(),
         ).get()
+
+        # 認可コード発行
         code = crypto.get_random_string(8)
+        AuthorizationCode.objects.create(
+            code=code,
+            redirect_uri=token.redirect_uri,
+            client=token.client,
+            expired_at=datetime.now() + timedelta(minutes=10),
+        )
+
+        # リダイレクト先URL作成
         location_url = f"{token.redirect_uri}?code={code}&state={token.state}"
+
         token.delete()
         return redirect(location_url)

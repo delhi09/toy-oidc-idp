@@ -28,6 +28,7 @@ class LoginForm(forms.Form):
     scope = forms.CharField(widget=forms.HiddenInput)
     redirect_uri = forms.CharField(widget=forms.HiddenInput)
     state = forms.CharField(widget=forms.HiddenInput)
+    client_id = forms.CharField(widget=forms.HiddenInput)
 
     def clean_scope(self):
         scope = self.cleaned_data["scope"].split()
