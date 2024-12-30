@@ -14,6 +14,8 @@ class ConsentAccessToken(models.Model):
     token = models.CharField(max_length=64, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     expired_at = models.DateTimeField()
+    redirect_uri = models.CharField(max_length=256)
+    state = models.CharField(max_length=32)
 
 
 class ConsentAccessTokenScope(models.Model):

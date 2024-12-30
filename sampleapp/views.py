@@ -33,7 +33,11 @@ class AuthorizeView(View):
             "login.html",
             {
                 "form": LoginForm(
-                    initial={"scope": " ".join(form.cleaned_data["scope"])}
+                    initial={
+                        "scope": " ".join(form.cleaned_data["scope"]),
+                        "redirect_uri": form.cleaned_data["redirect_uri"],
+                        "state": form.cleaned_data["state"],
+                    }
                 )
             },
         )
@@ -55,6 +59,8 @@ class AuthorizeView(View):
             token=crypto.get_random_string(8),
             user=user,
             expired_at=datetime.now() + timedelta(minutes=10),
+            redirect_uri=form.cleaned_data["redirect_uri"],
+            state=form.cleaned_data["state"],
         )
         for scope in form.cleaned_data["scope"]:
             ConsentAccessTokenScope.objects.create(token=token, scope=scope)
@@ -69,3 +75,14 @@ class ConsentView(LoginRequiredMixin, View):
             expired_at__gte=datetime.now(),
         ).get()
         return render(request, "consent.html", {"consent_access_token": token})
+
+    def post(self, request, consent_access_token):
+        token = ConsentAccessToken.objects.filter(
+            token=consent_access_token,
+            user=request.user,
+            expired_at__gte=datetime.now(),
+        ).get()
+        code = crypto.get_random_string(8)
+        location_url = f"{token.redirect_uri}?code={code}&state={token.state}"
+        token.delete()
+        return redirect(location_url)

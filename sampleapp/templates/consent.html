@@ -6,11 +6,13 @@
     <form action="{% url 'sampleapp:consent' consent_access_token.token %}" method="post">
       {% csrf_token %}
       <h1>以下の提供に同意しますか？</h1>
-      {% for scope in consent_access_token.consentaccesstokenscope_set.all %}
-          {% if scope.scope == "email" %}
-          <input type="checkbox" name="scope" value="{{ scope }}" checked>メールアドレス <br>
-          {% endif %}
-      {% endfor %}
+      <ul>
+        {% for scope in consent_access_token.consentaccesstokenscope_set.all %}
+            {% if scope.scope == "email" %}
+            <li>メールアドレス</li>
+            {% endif %}
+        {% endfor %}
+      </ul>
       <input type="submit" value="同意">
     </form>
   </body>
