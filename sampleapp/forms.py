@@ -35,3 +35,17 @@ class LoginForm(forms.Form):
         if "openid" not in scope:
             raise forms.ValidationError("Invalid scope")
         return scope
+
+
+class TokenForm(forms.Form):
+    redirect_uri = forms.CharField()
+    grant_type = forms.CharField()
+    code = forms.CharField()
+    client_id = forms.CharField()
+    client_secret = forms.CharField()
+
+    def clean_grant_type(self):
+        grant_type = self.cleaned_data["grant_type"]
+        if grant_type != "authorization_code":
+            raise forms.ValidationError("Invalid grant_type")
+        return grant_type

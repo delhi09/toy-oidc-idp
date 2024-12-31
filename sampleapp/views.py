@@ -3,7 +3,7 @@ from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import redirect, render
 from django.views import View
 
-from sampleapp.forms import AuthorizeForm, LoginForm
+from sampleapp.forms import AuthorizeForm, LoginForm, TokenForm
 from sampleapp.models import (
     AuthorizationCode,
     ConsentAccessToken,
@@ -13,6 +13,9 @@ from sampleapp.models import (
 from django.contrib.auth import authenticate, login
 from django.utils import crypto
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.contrib.auth.hashers import check_password
 
 
 class DiscoveryView(View):
@@ -65,7 +68,7 @@ class AuthorizeView(View):
         token = ConsentAccessToken.objects.create(
             token=crypto.get_random_string(8),
             user=user,
-            expired_at=datetime.now() + timedelta(minutes=10),
+            expired_at=datetime.now() + timedelta(minutes=120),
             redirect_uri=form.cleaned_data["redirect_uri"],
             state=form.cleaned_data["state"],
             client=RelyingParty.objects.get(client_id=form.cleaned_data["client_id"]),
@@ -97,7 +100,7 @@ class ConsentView(LoginRequiredMixin, View):
             code=code,
             redirect_uri=token.redirect_uri,
             client=token.client,
-            expired_at=datetime.now() + timedelta(minutes=10),
+            expired_at=datetime.now() + timedelta(minutes=120),
         )
 
         # リダイレクト先URL作成
@@ -105,3 +108,32 @@ class ConsentView(LoginRequiredMixin, View):
 
         token.delete()
         return redirect(location_url)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class TokenView(View):
+    def post(self, request):
+        form = TokenForm(request.POST)
+        if not form.is_valid():
+            return HttpResponseBadRequest()
+        try:
+          relying_party = RelyingParty.objects.get(
+              client_id=form.cleaned_data["client_id"]
+          )
+        except RelyingParty.DoesNotExist:
+            return HttpResponseBadRequest()
+        if not check_password(
+            form.cleaned_data["client_secret"], relying_party.client_secret
+        ):
+            return HttpResponseBadRequest()
+        try:
+            authorization_code = AuthorizationCode.objects.get(
+                code=form.cleaned_data["code"],
+                client=relying_party,
+                expired_at__gte=datetime.now(),
+            )
+        except AuthorizationCode.DoesNotExist:
+            return HttpResponseBadRequest()
+        if form.cleaned_data["redirect_uri"] != authorization_code.redirect_uri:
+            return HttpResponseBadRequest()
+        return JsonResponse({})

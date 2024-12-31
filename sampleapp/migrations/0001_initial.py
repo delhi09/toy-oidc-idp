@@ -6,7 +6,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -15,50 +14,98 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='ConsentAccessToken',
+            name="ConsentAccessToken",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('token', models.CharField(max_length=64, unique=True)),
-                ('expired_at', models.DateTimeField()),
-                ('redirect_uri', models.CharField(max_length=256)),
-                ('state', models.CharField(max_length=32)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("token", models.CharField(max_length=64, unique=True)),
+                ("expired_at", models.DateTimeField()),
+                ("redirect_uri", models.CharField(max_length=256)),
+                ("state", models.CharField(max_length=32)),
             ],
         ),
         migrations.CreateModel(
-            name='RelyingParty',
+            name="RelyingParty",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=64, unique=True)),
-                ('client_id', models.CharField(max_length=64, unique=True)),
-                ('client_secret', models.CharField(max_length=256)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=64, unique=True)),
+                ("client_id", models.CharField(max_length=64, unique=True)),
+                ("client_secret", models.CharField(max_length=256)),
             ],
         ),
         migrations.CreateModel(
-            name='ConsentAccessTokenScope',
+            name="ConsentAccessTokenScope",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('scope', models.CharField(max_length=32)),
-                ('token', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='sampleapp.consentaccesstoken')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("scope", models.CharField(max_length=32)),
+                (
+                    "token",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="sampleapp.consentaccesstoken",
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
-            model_name='consentaccesstoken',
-            name='client',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='sampleapp.relyingparty'),
+            model_name="consentaccesstoken",
+            name="client",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="sampleapp.relyingparty"
+            ),
         ),
         migrations.AddField(
-            model_name='consentaccesstoken',
-            name='user',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL),
+            model_name="consentaccesstoken",
+            name="user",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL
+            ),
         ),
         migrations.CreateModel(
-            name='AuthorizationCode',
+            name="AuthorizationCode",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('code', models.CharField(max_length=64)),
-                ('redirect_uri', models.CharField(max_length=256)),
-                ('expired_at', models.DateTimeField()),
-                ('client', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='sampleapp.relyingparty')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("code", models.CharField(max_length=64)),
+                ("redirect_uri", models.CharField(max_length=256)),
+                ("expired_at", models.DateTimeField()),
+                (
+                    "client",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="sampleapp.relyingparty",
+                    ),
+                ),
             ],
         ),
     ]

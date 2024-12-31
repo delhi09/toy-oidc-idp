@@ -15,4 +15,5 @@ urlpatterns = [
         views.ConsentView.as_view(),
         name="consent",
     ),
+    path("token/", views.TokenView.as_view(), name="token"),
 ]
