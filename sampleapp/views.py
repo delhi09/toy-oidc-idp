@@ -47,6 +47,7 @@ class AuthorizeView(View):
                         "redirect_uri": form.cleaned_data["redirect_uri"],
                         "state": form.cleaned_data["state"],
                         "client_id": form.cleaned_data["client_id"],
+                        "nonce": form.cleaned_data["nonce"],
                     }
                 )
             },
@@ -72,6 +73,7 @@ class AuthorizeView(View):
             redirect_uri=form.cleaned_data["redirect_uri"],
             state=form.cleaned_data["state"],
             client=RelyingParty.objects.get(client_id=form.cleaned_data["client_id"]),
+            nonce=form.cleaned_data["nonce"],
         )
         for scope in form.cleaned_data["scope"]:
             ConsentAccessTokenScope.objects.create(token=token, scope=scope)
@@ -101,6 +103,8 @@ class ConsentView(LoginRequiredMixin, View):
             redirect_uri=token.redirect_uri,
             client=token.client,
             expired_at=datetime.now() + timedelta(minutes=120),
+            user=request.user,
+            nonce=token.nonce,
         )
 
         # リダイレクト先URL作成
@@ -117,9 +121,9 @@ class TokenView(View):
         if not form.is_valid():
             return HttpResponseBadRequest()
         try:
-          relying_party = RelyingParty.objects.get(
-              client_id=form.cleaned_data["client_id"]
-          )
+            relying_party = RelyingParty.objects.get(
+                client_id=form.cleaned_data["client_id"]
+            )
         except RelyingParty.DoesNotExist:
             return HttpResponseBadRequest()
         if not check_password(
@@ -136,4 +140,13 @@ class TokenView(View):
             return HttpResponseBadRequest()
         if form.cleaned_data["redirect_uri"] != authorization_code.redirect_uri:
             return HttpResponseBadRequest()
+        id_token_data = {
+            "iss": "http://localhost:8000",
+            "sub": authorization_code.user.id,
+            "aud": relying_party.client_id,
+            "nonce": authorization_code.nonce,
+            "exp": int((datetime.now() + timedelta(minutes=10)).timestamp()),
+            "iat": int(datetime.now().timestamp()),
+        }
+        print("id_token_data:", id_token_data)
         return JsonResponse({})

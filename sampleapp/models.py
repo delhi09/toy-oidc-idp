@@ -18,6 +18,7 @@ class ConsentAccessToken(models.Model):
     redirect_uri = models.CharField(max_length=256)
     state = models.CharField(max_length=32)
     client = models.ForeignKey(RelyingParty, on_delete=models.CASCADE)
+    nonce = models.CharField(max_length=32)
 
 
 class ConsentAccessTokenScope(models.Model):
@@ -30,3 +31,5 @@ class AuthorizationCode(models.Model):
     redirect_uri = models.CharField(max_length=256)
     client = models.ForeignKey(RelyingParty, on_delete=models.CASCADE)
     expired_at = models.DateTimeField()
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    nonce = models.CharField(max_length=32)
