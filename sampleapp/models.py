@@ -33,3 +33,9 @@ class AuthorizationCode(models.Model):
     expired_at = models.DateTimeField()
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     nonce = models.CharField(max_length=32)
+
+
+class JwtKeyPair(models.Model):
+    private_key = models.TextField()
+    public_key = models.TextField()
+    algorithm = models.CharField(max_length=32)

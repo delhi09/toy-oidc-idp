@@ -3,6 +3,7 @@ from .models import (
     ConsentAccessToken,
     ConsentAccessTokenScope,
     AuthorizationCode,
+    JwtKeyPair,
 )
 from django.contrib import admin
 from django.utils import crypto
@@ -23,3 +24,4 @@ admin.site.register(RelyingParty, RelyingPartyAdmin)
 admin.site.register(ConsentAccessToken)
 admin.site.register(ConsentAccessTokenScope)
 admin.site.register(AuthorizationCode)
+admin.site.register(JwtKeyPair)

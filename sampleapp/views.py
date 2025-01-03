@@ -1,13 +1,17 @@
+import base64
 from datetime import datetime, timedelta
+import json
 from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import redirect, render
 from django.views import View
 
 from sampleapp.forms import AuthorizeForm, LoginForm, TokenForm
+from sampleapp.jwts import create_signature
 from sampleapp.models import (
     AuthorizationCode,
     ConsentAccessToken,
     ConsentAccessTokenScope,
+    JwtKeyPair,
     RelyingParty,
 )
 from django.contrib.auth import authenticate, login
@@ -106,7 +110,6 @@ class ConsentView(LoginRequiredMixin, View):
             user=request.user,
             nonce=token.nonce,
         )
-
         # リダイレクト先URL作成
         location_url = f"{token.redirect_uri}?code={code}&state={token.state}"
 
@@ -140,7 +143,13 @@ class TokenView(View):
             return HttpResponseBadRequest()
         if form.cleaned_data["redirect_uri"] != authorization_code.redirect_uri:
             return HttpResponseBadRequest()
-        id_token_data = {
+        key_pair = JwtKeyPair.objects.get(algorithm="RS256")
+        jwt_header = {
+            "alg": key_pair.algorithm,
+            "typ": "JWT",
+            "kid": str(key_pair.id),
+        }
+        jwt_payload = {
             "iss": "http://localhost:8000",
             "sub": authorization_code.user.id,
             "aud": relying_party.client_id,
@@ -148,5 +157,29 @@ class TokenView(View):
             "exp": int((datetime.now() + timedelta(minutes=10)).timestamp()),
             "iat": int(datetime.now().timestamp()),
         }
-        print("id_token_data:", id_token_data)
-        return JsonResponse({})
+        jwt_header_encoded = (
+            base64.urlsafe_b64encode(json.dumps(jwt_header).encode())
+            .decode()
+            .strip("=")
+        )
+        jwt_payload_encoded = (
+            base64.urlsafe_b64encode(json.dumps(jwt_payload).encode())
+            .decode()
+            .strip("=")
+        )
+        jwt_signature = create_signature(
+            jwt_header_encoded, jwt_payload_encoded, key_pair.private_key
+        )
+        id_token = f"{jwt_header_encoded}.{jwt_payload_encoded}.{jwt_signature}"
+        access_token = crypto.get_random_string(8)
+        refresh_token = crypto.get_random_string(8)
+        authorization_code.delete()
+        return JsonResponse(
+            {
+                "access_token": access_token,
+                "token_type": "Bearer",
+                "expires_in": 3600,
+                "refresh_token": refresh_token,
+                "id_token": id_token,
+            }
+        )
